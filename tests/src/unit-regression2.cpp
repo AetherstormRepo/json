@@ -37,7 +37,9 @@ using ordered_json = nlohmann::ordered_json;
 #endif
 
 #ifdef JSON_HAS_CPP_20
-    #include <span>
+    #if __has_include(<span>)
+        #include <span>
+    #endif
 #endif
 
 // NLOHMANN_JSON_SERIALIZE_ENUM uses a static std::pair
@@ -187,6 +189,15 @@ class my_allocator : public std::allocator<T>
 {
   public:
     using std::allocator<T>::allocator;
+
+    my_allocator() = default;
+    template<class U> my_allocator(const my_allocator<U>& /*unused*/) { }
+
+    template <class U>
+    struct rebind
+    {
+        using other = my_allocator<U>;
+    };
 };
 
 /////////////////////////////////////////////////////////////////////
@@ -664,6 +675,7 @@ TEST_CASE("regression tests 2")
     }
 
 #ifdef JSON_HAS_CPP_20
+#if __has_include(<span>)
     SECTION("issue #2546 - parsing containers of std::byte")
     {
         const char DATA[] = R"("Hello, world!")"; // NOLINT(cppcoreguidelines-avoid-c-arrays,hicpp-avoid-c-arrays,modernize-avoid-c-arrays)
@@ -671,6 +683,7 @@ TEST_CASE("regression tests 2")
         const json j = json::parse(s);
         CHECK(j.dump() == "\"Hello, world!\"");
     }
+#endif
 #endif
 
     SECTION("issue #2574 - Deserialization to std::array, std::pair, and std::tuple with non-default constructable types fails")
